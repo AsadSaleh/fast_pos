@@ -10,7 +10,7 @@ const productSchema = z.object({
   id: z.number(),
   name: z.string(),
   price: z.number(),
-  category: z.enum(["drink", "food"]),
+  category: z.enum(["drink", "food"]).nullable(),
   image_url: z.string().nullable(),
   description: z.string().nullable(),
 });
@@ -23,6 +23,8 @@ const orderItemSchema = z.object({
 });
 export type OrderItem = z.infer<typeof orderItemSchema>;
 
+export const orderItemArraySchema = z.array(orderItemSchema);
+
 const orderRecapSearchSchema = z.object({
   // customerName: z.string(),
   orderItems: z.array(
@@ -30,6 +32,10 @@ const orderRecapSearchSchema = z.object({
   ),
 });
 export type OrderRecapSearch = z.infer<typeof orderRecapSearchSchema>;
+
+const paymentSearchSchema = z.object({
+  orderId: z.number(),
+});
 
 // Create a root route
 const rootRoute = new RootRoute({
@@ -64,6 +70,7 @@ export const paymentRoute = new Route({
   getParentRoute: () => rootRoute,
   path: "/payment",
   component: Payment,
+  validateSearch: paymentSearchSchema,
 });
 
 // Create the route tree using your routes

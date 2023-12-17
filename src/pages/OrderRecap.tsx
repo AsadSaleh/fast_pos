@@ -48,8 +48,10 @@ export default function OrderRecap() {
       return;
     }
 
+    console.log("hasil mutation ke supabase: ", res.data[0].id);
+
     // Navigate to next screen:
-    navigate({ to: "/payment" });
+    navigate({ to: "/payment", search: { orderId: res.data[0].id } });
   }
 
   return (

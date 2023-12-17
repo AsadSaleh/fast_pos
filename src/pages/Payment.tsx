@@ -1,143 +1,195 @@
 import { useSearch } from "@tanstack/react-router";
-import { paymentRoute } from "../Router";
-// import { numberFmt } from "../helper";
-import { useState } from "react";
+import { OrderItem, orderItemArraySchema, paymentRoute } from "../Router";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getOrderById } from "../repositories";
+import { numberFmt } from "../helper";
 
 export default function Payment() {
-  const [paymentMethod, setPaymentMethod] = useState<
-    "qris" | "gopay" | "dana" | null
-  >(null);
   const search = useSearch({ from: paymentRoute.id });
-  console.log({ search });
-  // const { orderItems } = search;
-  // const subTotal = orderItems.reduce(
-  //   (acc, val) => acc + val.quantity * val.product.price,
-  //   0
-  // );
-  // const tax11percent = subTotal * 0.11;
-  // const total = subTotal + tax11percent;
 
-  return (
-    <main className="mx-auto w-full p-4 lg:w-3/5 mt-5">
-      <div className="text-3xl">Payment</div>
-      <div className="mt-4">
-        Customer name: <b>Fulan</b>
-      </div>
-      <div className="mt-2">Order Items</div>
-      <div className="mt-1">
-        <div className="border">
-          <div className="flex flex-row bg-slate-300">
-            <div className="flex-1 px-3 text-slate-600">Menu</div>
-            <div className="flex-1 px-3 text-slate-600">Unit price</div>
-            <div className="flex-1 px-3 text-slate-600">Qty</div>
-            <div className="flex-1 px-3 text-slate-600 text-right">Total</div>
-          </div>
-          {/* {[].map((orderItem) => {
-            const unitPrice = orderItem.product.price;
-            const price = unitPrice * orderItem.quantity;
-            return (
-              <div key={orderItem.id} className="border flex flex-row">
-                <div className="flex-1 p-3">{orderItem.product.name}</div>
-                <div className="flex-1 p-3">{numberFmt(unitPrice)}</div>
-                <div className="flex-1 p-3">x{orderItem.quantity}</div>
-                <div className="flex-1 p-3 text-right">{numberFmt(price)}</div>
-              </div>
-            );
-          })} */}
-        </div>
+  const query = useQuery({
+    queryKey: ["payment", search.orderId],
+    queryFn: () => getOrderById(search.orderId),
+  });
 
-        <div className="flex gap-4 items-center justify-end mt-2">
-          <div>Subtotal</div>
-          {/* <div className="w-20 text-right">{numberFmt(subTotal)}</div> */}
-        </div>
-        <div className="flex gap-4 items-center justify-end">
-          <div>Tax (11%)</div>
-          {/* <div className="w-20 text-right">{numberFmt(tax11percent)}</div> */}
-        </div>
-        <div className="flex gap-4 items-center justify-end">
-          <div>Total</div>
-          <div className="w-20 text-right font-bold text-lg">
-            {/* {numberFmt(total)} */}
-          </div>
-        </div>
-      </div>
+  console.log(query);
 
-      {/* Payment Method */}
-      <div className="mt-8 flex items-center justify-between">
-        <h4 className="text-xl">Choose Payment Method</h4>
-        {paymentMethod !== null ? (
-          <button
-            onClick={() => setPaymentMethod(null)}
-            className="bg-slate-200 px-4 py-1 rounded-md text-sm active:scale-90 transition"
-          >
-            Cancel
-          </button>
-        ) : null}
-      </div>
-      <div className="grid grid-cols-3 gap-4 mt-2">
-        <button
-          onClick={() => setPaymentMethod("qris")}
-          className="bg-slate-100 h-20 flex items-center justify-center rounded-md active:scale-95 transition relative"
-        >
-          {paymentMethod === "qris" ? (
-            <div className="absolute right-2 top-2 text-white bg-green-700 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+  if (query.data) {
+    let items: OrderItem[] = [];
+    const parsed = orderItemArraySchema.safeParse(query.data.data?.items);
+
+    if (parsed.success) {
+      items = parsed.data;
+    }
+    const subTotal = items.reduce(
+      (acc, val) => acc + val.quantity * val.product.price,
+      0
+    );
+    const tax11percent = subTotal * 0.11;
+    const total = subTotal + tax11percent;
+
+    return (
+      <main className="mx-auto w-full p-4 lg:w-2/5 mt-5">
+        {/* Pembayaran */}
+        <div>
+          <div className="flex justify-between items-center">
+            <div className="text-3xl">Pembayaran</div>
+            <div className="badge">
+              Status:{" "}
+              <span className="underline">
+                {mapStatusToText(query.data.data?.status)}
+              </span>
             </div>
-          ) : null}
-          <img
-            src="https://seeklogo.com/images/Q/quick-response-code-indonesia-standard-qris-logo-F300D5EB32-seeklogo.com.png"
-            className="max-h-16"
-          />
-        </button>
-        <button className="bg-slate-300 h-20 flex items-center justify-center rounded-md p-4 cursor-not-allowed">
-          <img
-            src="https://1.bp.blogspot.com/-NwSMFZdU8l4/XZxj8FxN6II/AAAAAAAABdM/oTjizwstkRIqQZ7LOZSPMsUG3EYXF3E4wCEwYBhgL/s400/logo-gopay-vector.png"
-            className="max-h-16"
-          />
-        </button>
-        <button className="bg-slate-300 h-20 flex items-center justify-center rounded-md p-4 cursor-not-allowed">
-          <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Logo_dana_blue.svg/512px-Logo_dana_blue.svg.png"
-            className="max-h-16"
-          />
-        </button>
-      </div>
+          </div>
 
-      <div className="mt-10">
-        <button
-          disabled={paymentMethod === null}
-          className="disabled:bg-slate-600 flex items-center justify-center gap-2 enabled:hover:gap-4 transition-all bg-green-700 px-4 py-4 w-full rounded-md text-white enabled:active:scale-95"
-        >
-          <div className="text-2xl">Continue Payment</div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-8 h-8"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+          <div className="flex flex-col items-center justify-center">
+            <Countdown deadline={query.data?.data?.deadline_at ?? ""} />
+            <img src="/images/random_qr_code.png" alt="qr code" />
+            <p>PT Asad Software Engineer Pro</p>
+            <p className="text-xl font-bold">Rp{numberFmt(total)}</p>
+          </div>
+        </div>
+
+        {/* Detail Customer */}
+        <div className="mt-10">
+          <div className="mt-8 flex items-center justify-between">
+            <h4 className="text-3xl">Detail Customer</h4>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <input
+              name="customer_name"
+              placeholder="Customer name"
+              value={query.data.data?.customer_name}
+              className="rounded-md p-2 bg-gray-200"
+              readOnly
             />
-          </svg>
-        </button>
-      </div>
-    </main>
+            <input
+              name="customer_phone"
+              placeholder="Phone number"
+              value={query.data.data?.customer_phone}
+              className="rounded-md p-2 bg-gray-200"
+              readOnly
+            />
+            <input
+              name="customer_address"
+              placeholder="Address"
+              value={query.data.data?.customer_address}
+              className="rounded-md p-2 bg-gray-200 w-80"
+              readOnly
+            />
+          </div>
+        </div>
+
+        {/* Detail Pesanan */}
+        <div className="mt-10">
+          <h4 className="text-3xl">Detail Pesanan</h4>
+          <div className="border mt-2 rounded-lg">
+            <div className="flex flex-row rounded-t-lg bg-slate-300">
+              <div className="flex-1 p-2 px-3 text-slate-600">Menu</div>
+              <div className="flex-1 p-2 px-3 text-slate-600">Unit price</div>
+              <div className="p-2 px-3 text-slate-600">Qty</div>
+              <div className="flex-1 p-2 px-3 text-slate-600 text-right">
+                Total
+              </div>
+            </div>
+            {items.map((orderItem) => {
+              const unitPrice = orderItem.product.price;
+              const price = unitPrice * orderItem.quantity;
+              return (
+                <div
+                  key={orderItem.id}
+                  className="border last:rounded-b-lg flex flex-row"
+                >
+                  <div className="flex-1 p-3">{orderItem.product.name}</div>
+                  <div className="flex-1 p-3">{numberFmt(unitPrice)}</div>
+                  <div className="flex p-3">{orderItem.quantity}</div>
+                  <div className="flex-1 p-3 text-right">
+                    {numberFmt(price)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-4 items-center justify-end mt-2">
+            <div>Subtotal</div>
+            <div className="w-20 text-right">{numberFmt(subTotal)}</div>
+          </div>
+          <div className="flex gap-4 items-center justify-end">
+            <div>Tax (11%)</div>
+            <div className="w-20 text-right">{numberFmt(tax11percent)}</div>
+          </div>
+          <div className="flex gap-4 items-center justify-end">
+            <div>Total</div>
+            <div className="w-20 text-right font-bold text-lg">
+              {numberFmt(total)}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return null;
+}
+
+function mapStatusToText(status?: "pending" | "paid" | "failed_timeout") {
+  if (status === "pending") {
+    return "Menunggu Pembayaran";
+  }
+  if (status === "paid") {
+    return "Pembayaran Berhasil";
+  }
+  if (status === "failed_timeout") {
+    return "Pembayaran Gagal, Waktu Habis";
+  }
+  return "";
+}
+
+function Countdown({ deadline }: { deadline: string }) {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setTick((p) => p + 1);
+    }, 1000);
+    return () => clearInterval(timerId);
+  });
+
+  const timeLeft = calculateTimeLeft(deadline);
+  if (
+    timeLeft.hours === 0 &&
+    timeLeft.minutes === 0 &&
+    timeLeft.seconds === 0
+  ) {
+    return <div>Waktu habis!</div>;
+  }
+  return (
+    <div>
+      <p>Mohon bayar sebelum {new Date(deadline).toLocaleString()}</p>
+      <p>Kamu memiliki waktu:</p>
+      <p>
+        {timeLeft.hours} jam : {timeLeft.minutes} menit : {timeLeft.seconds}{" "}
+        detik
+      </p>
+    </div>
   );
 }
+
+const calculateTimeLeft = (deadline: string) => {
+  const now = new Date();
+  const difference = new Date(deadline).getTime() - now.getTime();
+
+  if (difference > 0) {
+    const hours = Math.floor(
+      (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+    return { hours, minutes, seconds };
+  } else {
+    return { hours: 0, minutes: 0, seconds: 0 };
+  }
+};
